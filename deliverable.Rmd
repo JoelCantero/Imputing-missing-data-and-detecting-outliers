@@ -1,0 +1,97 @@
+---
+title: "Imputing missing data and detecting outliers"
+author: "Marc Méndez & Joel Cantero Priego"
+date: "28/2/2019"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+In this exercise we will use the Russet data set. In 1964 Russet tried to find the relation between political instability of countries and the economical and agricultural inequality. Russett collected this data to study relationships between Agricultural Inequality, Industrial Development and Political Instability. Russett's hypotheses can be formulated as follows: It is difficult for a country to escape dictatorship when its agricultural inequality is above-average and its industrial
+development below-average.
+
+The collected data refer to 47 countries and 9 variables on the period after the Second World War (∼1945-1962). The Russett data set (Russett, 1964) are studied in Gifi (1990).
+ 
+First of all, we are going to read 'Russet_ineqdata.txt' and put it to X variable. We have to set some parameters to read.table to function to indicate that:
+ 
+1. This file has a header (header=T).
+2. The rows file are separated by tabulation (sep='\t').
+3. The first column contains the row names, they are not an attribute (row.names=1).
+
+```{r cars}
+X <- read.table('Russet_ineqdata.txt', header=T, sep='\t', row.names=1)
+X
+```
+
+We can observe that our X dataframe has 47 rows and 9 attributes:
+
+1. **Gini**: a double variable that indicates the concentration index.
+2. **farm**: a double variable that indicates the % of small farmers with 50% of land.
+3. **rent**: a double variable that indicates the % of farmers not cultivating their own land.
+4. **Gnpr**: a integer variable that indicates the GNP per capita ($ 1955).
+5. **Laboagr**: an integer attribute that indicates the % of activate population in Agriculture.
+6. **Instab**: a double attribute that indicates the total number of prime ministers during 1945-1961.
+7. **ecks**: an integer attribute that indicates the index of violent conflicts during 1946-1961.
+8. **Death**: an integer attribute that indicates the deaths during demonstrations 1950-1962.
+9. **demo**: an integer attribute that indicates if the country is stable (1), instable (2), or a dictatorship (3).
+
+## Exercises
+
+### Impute missing values and save the result obtained.
+
+We have observed that our dataset has some NA values (missing values) that we have to impute them. 
+
+Ignoring missing data can seriously bias the results. How can we imput them?
+
+Before to start, we have to identify them. In this case, we have realized that our missing data contains the 'NA' string. We will use md.pattern function that is useful for investigating any structure of missing observations in the data. This mentioned function pertains to mice package. So, first of all we have to install and activate this package.
+
+```{r pressure}
+#Installing mice package
+#install.packages('mice')
+library(mice)
+
+# Identifying missing values with a plot.
+md.pattern(X)
+```
+
+Afterward, we are going to dealing with these missing values. We can do it in 5 different ways:
+
+#### Ignore records with missing values (Listwise deletion).
+The easiest way is to delete these records that have missing values. For this purpose, we will use complete.cases function tthat return a logical vector indicating which rows are complete, i.e., have no missing values.
+
+```{r ignoreRecords}
+#Ignore records with missing values.
+X.ignoreRecords <-  X[complete.cases(X),]
+X.ignoreRecords
+```
+
+Thanks to this function, we will have our dataset without 4 rows containing missing values. It means that our new dataset will contain 43 records instead of the 47 original ones. 
+
+Due our dataset is very small, this solution is not good for us; deleting 4 rows means that we are deleting almost 10% of our data. For this reason, we will not apply this solution.
+
+### Unconditional mean imputation
+This treatment of missing values consists on substitute every missing value by the corresponding global mean of the variable.
+
+As we have seen in the previous section, just two columns are affected by missing values: rent and ecks. We have to calculate the mean of each attribute (dismissing the NA's values, so we are going to use X.ignoreRecords to calculate each mean). Once we have calculated these two values, we have to put them instead of NA's values.
+
+```{r meanImputation}
+X.Mean <- X
+
+for(i in 1:ncol(X)) {
+  X.Mean[is.na(X.Mean[,i]), i] <- mean(X.ignoreRecords[,i], na.rm = TRUE)
+}
+```
+
+
+## References
+* Russett B.M. (1964), Inequality and Instability: The Relation of Land Tenure to Politics, World
+Politics 16:3, 442-454.
+* Gifi, A. (1990), Nonlinear multivariate analysis, Chichester: Wiley.
+
