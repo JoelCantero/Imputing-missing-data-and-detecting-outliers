@@ -27,7 +27,6 @@ First of all, we are going to read 'Russet_ineqdata.txt' and put it to X variabl
 
 ```{r cars}
 X <- read.table('Russet_ineqdata.txt', header=T, sep='\t', row.names=1)
-X
 ```
 
 We can observe that our X dataframe has 47 rows and 9 attributes:
@@ -42,8 +41,6 @@ We can observe that our X dataframe has 47 rows and 9 attributes:
 8. **Death**: an integer attribute that indicates the deaths during demonstrations 1950-1962.
 9. **demo**: an integer attribute that indicates if the country is stable (1), instable (2), or a dictatorship (3).
 
-## Exercises
-
 ### Impute missing values and save the result obtained.
 
 We have observed that our dataset has some NA values (missing values) that we have to impute them. 
@@ -52,11 +49,13 @@ Ignoring missing data can seriously bias the results. How can we imput them?
 
 Before to start, we have to identify them. In this case, we have realized that our missing data contains the 'NA' string. We will use md.pattern function that is useful for investigating any structure of missing observations in the data. This mentioned function pertains to mice package. So, first of all we have to install and activate this package.
 
-```{r pressure}
+```{r pressure, echo=FALSE, message=FALSE}
 #Installing mice package
 #install.packages('mice')
 library(mice)
+```
 
+```{r message=FALSE}
 # Identifying missing values with a plot.
 md.pattern(X)
 ```
@@ -69,7 +68,6 @@ The easiest way is to delete these records that have missing values. For this pu
 ```{r ignoreRecords}
 #Ignore records with missing values.
 X.ignoreRecords <-  X[complete.cases(X),]
-X.ignoreRecords
 ```
 
 Thanks to this function, we will have our dataset without 4 rows containing missing values. It means that our new dataset will contain 43 records instead of the 47 original ones. 
@@ -83,10 +81,68 @@ As we have seen in the previous section, just two columns are affected by missin
 
 ```{r meanImputation}
 X.Mean <- X
+X.Mean$Rent[is.na(X.Mean$Rent)] <- mean(X$Rent, na.rm = TRUE)
+X.Mean$ecks[is.na(X.Mean$ecks)] <- mean(X$ecks, na.rm = TRUE)
+```
 
-for(i in 1:ncol(X)) {
-  X.Mean[is.na(X.Mean[,i]), i] <- mean(X.ignoreRecords[,i], na.rm = TRUE)
-}
+### Regression imputation
+In regression imputation we substitute every missing valueby the predicted value from a multiple regression. In this case, we have to create a lineal model for every attribute that is missing in our dataset, specifically: Rent and ecks.
+
+Once we have our two models, we predict the NA values considering the another attributes of the country (row).
+
+```{r regressionImputation}
+X.RegressionImputation <- X
+
+RentModel <- lm(Rent ~ ., X)
+EcksModel <- lm(ecks ~ ., data = X)
+
+X.RegressionImputation$Rent[is.na(X$Rent)] <- predict(RentModel, X.RegressionImputation[is.na(X$Rent),])
+
+X.RegressionImputation$ecks[is.na(X$ecks)] <- predict(EcksModel, X.RegressionImputation[is.na(X$ecks),])
+```
+
+### Knn imputation
+KnnImputation function pertains to DMwR library (we must install and activate it). For every individual containing a missing value in a specific variable, we find another individual with minimal distance to the previous one with complete information. Then transfer (copy) the value of the specific variable, of the second individual to the first one.
+
+```{r knnImputation}
+# Installing and activate DMwR package
+#install.packages('DMwR')
+library(DMwR)
+
+X.knn <- knnImputation(X, k = 7)
+```
+
+### Imputation by chained equations
+It imputes the missing values of the variable from the predicted values of the regression of the current variable with the remaining ones (similar to lineal regression imputation).
+```{r imputationByChainedEquations}
+# Installing and activate MICE package
+#install.packages('mice')
+library(mice)
+X.mice <- complete(mice(X, m = 1), 1)
+row.names(X.mice) <- row.names(X)
+```
+
+### Imputation by random Forests
+Random Forests impututes for every variable with missing values the missing values of the variable from the predicted values from the random forest of the individuals with the current variable as response using the remaining ones as predictors. 
+
+```{r imputationByRandomForests, message=FALSE}
+#install.packages('missForest')
+library(missForest)
+
+X.missForest <- missForest(X)$ximp
+
+```
+### Comparing different imputation values
+Now we have some ways to impute our NA values, we are going to compare for every NA value the different imputations we have built (discarding ignoring values method).
+
+We can observe that Miss Forest, KNN and Regression Imputation have similar values instead of the other ones.
+
+To conclude, we will use one of these three methods if we have to impute some NA values in our datasets. We discard mean imputation because it does not count the other values of our instance, and it is a bad value.
+
+```{r comparation, message=FALSE}
+X.compare <- rbind(X.Mean[is.na(X)], X.RegressionImputation[is.na(X)], X.knn[is.na(X)], X.mice[is.na(X)], X.missForest[is.na(X)] )
+row.names(X.compare) <- c('Mean', 'RegressionImputation', 'KNN', 'Mice', 'MissForest')
+X.compare
 ```
 
 
