@@ -1,6 +1,6 @@
 ---
 title: "Imputing missing data and detecting outliers"
-author: "Marc Méndez & Joel Cantero Priego"
+author: "Marc Mendez & Joel Cantero Priego"
 date: "28/2/2019"
 output:
   html_document:
@@ -17,7 +17,7 @@ knitr::opts_chunk$set(echo = TRUE)
 In this exercise we will use the Russet data set. In 1964 Russet tried to find the relation between political instability of countries and the economical and agricultural inequality. Russett collected this data to study relationships between Agricultural Inequality, Industrial Development and Political Instability. Russett's hypotheses can be formulated as follows: It is difficult for a country to escape dictatorship when its agricultural inequality is above-average and its industrial
 development below-average.
 
-The collected data refer to 47 countries and 9 variables on the period after the Second World War (∼1945-1962). The Russett data set (Russett, 1964) are studied in Gifi (1990).
+The collected data refer to 47 countries and 9 variables on the period after the Second World War (???1945-1962). The Russett data set (Russett, 1964) are studied in Gifi (1990).
  
 First of all, we are going to read 'Russet_ineqdata.txt' and put it to X variable. We have to set some parameters to read.table to function to indicate that:
  
@@ -144,6 +144,45 @@ X.compare <- rbind(X.Mean[is.na(X)], X.RegressionImputation[is.na(X)], X.knn[is.
 row.names(X.compare) <- c('Mean', 'RegressionImputation', 'KNN', 'Mice', 'MissForest')
 X.compare
 ```
+
+###Dealing with univariate outliers
+On this part we are asked to take one of the previous datasets and use them to detect and correct outliers. We will use the miss forest dataset. First step is to detect univariate outliers, this can be done with boxplots.
+
+```{r boxplot, message=FALSE}
+boxplot(X.outliers$Gini, horizontal = TRUE, col = 'red')
+boxplot(X.outliers$farm, horizontal = TRUE, col = 'red')
+boxplot(X.outliers$Rent, horizontal = TRUE, col = 'red')
+boxplot(X.outliers$Gnpr, horizontal = TRUE, col = 'red')
+boxplot(X.outliers$Laboagr, horizontal = TRUE, col = 'red')
+boxplot(X.outliers$Instab, horizontal = TRUE, col = 'red')
+boxplot(X.outliers$Death, horizontal = TRUE, col = 'red')
+```
+
+
+By analyzing the boxplots, we can see that some of the values are univariate outliers. This can be due to an anomaly lecture or an error when takin the data. In our case we can try to solve this by making them as an NA value and using an imput method to insert a more accurate value. We can do this more than once until we get all outliers corrected.
+
+```{r, message=FALSE}
+X.outliers$Instab[X.outliers$Instab < summary(X.outliers$Instab)[2]-1.5*(summary(X.outliers$Instab)[5] - summary(X.outliers$Instab))[2]] <- NA
+X.outliers <- missForest(X.outliers)$ximp
+boxplot(X.outliers$Instab, horizontal = TRUE, col = 'red')
+```
+
+As we can see in this example, we detect univariate outliers in the boxplot. To solve it we transform them to NA and after assign a value. Once this is done we need to check if there are still outliers. 
+
+###Dealing with multivariate outliers
+The next step once we have detected and corrected the univariate outliers, it is time to work on the multivariate. This means not only comparing each of the features of the dataset individualy but doing it with the Mahalanobis distances.
+
+For doing this we will use the moutliers function from the chemometrics package. With this function we obtain three values: the classical Mahalanobis distance, the robust Mahalanobis distance and the cutoff from which every value is an outlier.
+
+
+
+Another way to detect multivariate outliers is to use the Local Outlier Factor algorithm. Is is usefull for identifying density-based local outliers.
+
+```{r LOF outliers}
+nameOutliers
+```
+Here we picked the 5 values with highest LOF as potential outliers. 
+
 
 
 ## References

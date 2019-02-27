@@ -7,6 +7,14 @@ library(DMwR)
 #install.packages('missForest')
 library(missForest)
 
+#install.packages('chemometrics')
+library(chemometrics)
+
+
+#install.packages('mvoutlier')
+library(mvoutlier) 
+
+
 X <- read.table('Russet_ineqdata.txt', header=T, sep='\t', row.names=1)
 X
 
@@ -116,7 +124,7 @@ boxplot(X.outliers$Death, horizontal = TRUE, col = 'red')
 
 
 
-library(chemometrics)
+
 X.multivariantOutliers <- X.missForest
 temp2 <- Moutlier(X.multivariantOutliers, quantile = 0.995, plot = FALSE)
 X.multivariantOutliers <- cbind(X.multivariantOutliers, temp2$md, temp2$rd, temp2$cutoff)
@@ -125,19 +133,45 @@ names(X.multivariantOutliers)[11] <- "Robust"
 names(X.multivariantOutliers)[12] <- "Cutoff"
 
 
-X.multivariantOutliers$Classical[X.multivariantOutliers$Classical > X.multivariantOutliers$Cutoff]
 
-ggplot(data = X.multivarianOutliers ,mapping = aes(y = X.multivarianOutliers$Classical, x = temp$Index )) +
-  geom_point(data= X.multivarianOutliers, aes(y = X.multivarianOutliers$Classical, x = temp$Index, colour="Data") , size=1) +
+
+ggplot(data = X.multivariantOutliers ,mapping = aes(y = X.multivariantOutliers$Classical, x = temp$Index, label = rownames(X.multivariantOutliers))) +
+  geom_point(data= X.multivariantOutliers, aes(y = X.multivariantOutliers$Classical, x = temp$Index, colour="Data") , size=1) +
   xlab("Index") + ylab("Classical") +
-  geom_line(mapping = aes(y= X.multivarianOutliers$Cutoff, x = temp$Index)) +
+  geom_line(mapping = aes(y= X.multivariantOutliers$Cutoff)) +
+  geom_text(hjust=0, vjust=0) +
   ggtitle("Mahalanobis Distance")
 
 
-ggplot(data = X.multivarianOutliers ,mapping = aes(y = X.multivarianOutliers$Robust, x = temp$Index )) +
+ggplot(data = X.multivarianOutliers ,mapping = aes(y = X.multivarianOutliers$Robust, x = temp$Index, label = rownames(X.multivariantOutliers) )) +
   geom_point(data= X.multivarianOutliers, aes(y = X.multivarianOutliers$Robust, x = temp$Index, colour="Data") , size=1) +
   xlab("Index") + ylab("Robust") +
-  geom_line(mapping = aes(y= X.multivarianOutliers$Cutoff, x = temp$Index)) +
+  geom_line(mapping = aes(y= 1000)) +
+  geom_text(hjust=0, vjust=0) +
   ggtitle("Robust Distance")
 
+
+
+ggplot(data = X.multivariantOutliers ,mapping = aes(y = X.multivariantOutliers$Robust, x = X.multivariantOutliers$Classical, label = rownames(X.multivariantOutliers))) +
+  geom_point(data= X.multivariantOutliers, aes(y = X.multivariantOutliers$Robust, x = X.multivariantOutliers$Classical, colour="Data") , size=1) +
+  xlab("Classical distance") + ylab("Robust distance") +
+  geom_line(mapping = aes(y= X.multivariantOutliers$Cutoff)) +
+  geom_line(mapping = aes(x = X.multivariantOutliers$Cutoff)) +
+  geom_text(hjust=0, vjust=0) +
+  ggtitle("Mahalanobis Distance vs Robust distance")
+
+
+outlier.scores <- lofactor(X.multivariantOutliers, k=5)
+plot(density(outlier.scores))
+# pick top 5 outliers
+outliers <- order(outlier.scores, decreasing=T)[1:5]
+# who are outliers
+print(outliers)
+
+nameOutliers<- list()
+for (i in 1:nrow(X.multivariantOutliers))
+{
+  if (i %in% outliers) nameOutliers <- rbind(nameOutliers, row.names(X.multivariantOutliers)[i])
+}
+nameOutliers
 
