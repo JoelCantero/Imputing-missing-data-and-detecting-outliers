@@ -11,9 +11,6 @@ library(missForest)
 library(chemometrics)
 
 
-#install.packages('mvoutlier')
-library(mvoutlier) 
-
 
 X <- read.table('Russet_ineqdata.txt', header=T, sep='\t', row.names=1)
 X
@@ -143,8 +140,8 @@ ggplot(data = X.multivariantOutliers ,mapping = aes(y = X.multivariantOutliers$C
   ggtitle("Mahalanobis Distance")
 
 
-ggplot(data = X.multivarianOutliers ,mapping = aes(y = X.multivarianOutliers$Robust, x = temp$Index, label = rownames(X.multivariantOutliers) )) +
-  geom_point(data= X.multivarianOutliers, aes(y = X.multivarianOutliers$Robust, x = temp$Index, colour="Data") , size=1) +
+ggplot(data = X.multivariantOutliers ,mapping = aes(y = X.multivariantOutliers$Robust, x = temp$Index, label = rownames(X.multivariantOutliers) )) +
+  geom_point(data= X.multivariantOutliers, aes(y = X.multivariantOutliers$Robust, x = temp$Index, colour="Data") , size=1) +
   xlab("Index") + ylab("Robust") +
   geom_line(mapping = aes(y= 1000)) +
   geom_text(hjust=0, vjust=0) +

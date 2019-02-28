@@ -148,20 +148,12 @@ X.compare
 ###Dealing with univariate outliers
 On this part we are asked to take one of the previous datasets and use them to detect and correct outliers. We will use the miss forest dataset. First step is to detect univariate outliers, this can be done with boxplots.
 
-```{r boxplot, message=FALSE}
-boxplot(X.outliers$Gini, horizontal = TRUE, col = 'red')
-boxplot(X.outliers$farm, horizontal = TRUE, col = 'red')
-boxplot(X.outliers$Rent, horizontal = TRUE, col = 'red')
-boxplot(X.outliers$Gnpr, horizontal = TRUE, col = 'red')
-boxplot(X.outliers$Laboagr, horizontal = TRUE, col = 'red')
-boxplot(X.outliers$Instab, horizontal = TRUE, col = 'red')
-boxplot(X.outliers$Death, horizontal = TRUE, col = 'red')
-```
 
 
 By analyzing the boxplots, we can see that some of the values are univariate outliers. This can be due to an anomaly lecture or an error when takin the data. In our case we can try to solve this by making them as an NA value and using an imput method to insert a more accurate value. We can do this more than once until we get all outliers corrected.
 
-```{r, message=FALSE}
+```{r, message=FALSE, eval =FALSE}
+X.outliers <- X.missForest
 X.outliers$Instab[X.outliers$Instab < summary(X.outliers$Instab)[2]-1.5*(summary(X.outliers$Instab)[5] - summary(X.outliers$Instab))[2]] <- NA
 X.outliers <- missForest(X.outliers)$ximp
 boxplot(X.outliers$Instab, horizontal = TRUE, col = 'red')
@@ -170,18 +162,59 @@ boxplot(X.outliers$Instab, horizontal = TRUE, col = 'red')
 As we can see in this example, we detect univariate outliers in the boxplot. To solve it we transform them to NA and after assign a value. Once this is done we need to check if there are still outliers. 
 
 ###Dealing with multivariate outliers
-The next step once we have detected and corrected the univariate outliers, it is time to work on the multivariate. This means not only comparing each of the features of the dataset individualy but doing it with the Mahalanobis distances.
+The next step once we have detected and corrected the univariate outliers, it is time to work on the multivariate. Data is multivariate and detecting univariate outliers does not imply multivariate detection. 
 
-For doing this we will use the moutliers function from the chemometrics package. With this function we obtain three values: the classical Mahalanobis distance, the robust Mahalanobis distance and the cutoff from which every value is an outlier.
+For doing this we will use the moutliers function from the chemometrics package. With this function we obtain three values: the classical Mahalanobis distance, the robust Mahalanobis distance and the cutoff from which every value is an outlier(only for the Classical distance).
 
+```{r plot Robust distance, message = FALSE}
+#install.packages('chemometrics')
+library(chemometrics) 
+#install.packages('ggplot2')
+library(ggplot2) 
+temp <- X
+temp[,10] <- NA
+names(temp)[10] <- "Index"
+for (i in 1:nrow(temp))
+  {
+    temp[i,10] <- i
+}
 
+X.multivariantOutliers <- X.missForest
+temp2 <- Moutlier(X.multivariantOutliers, quantile = 0.995, plot = FALSE)
+X.multivariantOutliers <- cbind(X.multivariantOutliers, temp2$md, temp2$rd, temp2$cutoff)
+names(X.multivariantOutliers)[10] <- "Classical" 
+names(X.multivariantOutliers)[11] <- "Robust" 
+names(X.multivariantOutliers)[12] <- "Cutoff"
+ggplot(data = X.multivariantOutliers ,mapping = aes(y = X.multivariantOutliers$Robust, x = temp$Index, label = rownames(X.multivariantOutliers) )) +
+  geom_point(data= X.multivariantOutliers, aes(y = X.multivariantOutliers$Robust, x = temp$Index, colour="Data") , size=1) +
+  xlab("Index") + ylab("Robust") +
+  geom_text(hjust=0, vjust=0) +
+  ggtitle("Robust Distance")
+```
+The problem with Classical Mahalanobis distance can be influenced by univariate outliers. To avoid this we will use the Robus Mahalanobis distance which shows more clearly who are the outliers by estimating the centrallity and the covariance matrix.
+As we can see, the Robust shows clearly that Cuba is a multivariate outlier and we can also consider Sud-Vietnam and Bolicie as well. The other ones are not so clear, so we will consider only this three as potential outliers.
+
+Another option is to plot Classical distance vs Robust distance. By doing this we will have a more accurate solution as the outliers found by both methods give you stronger base to say they are outliers. This example applies for Cuba, is a clear outlier in Classical and also clear in Robust so we can say with high confidence it is an outlier.
 
 Another way to detect multivariate outliers is to use the Local Outlier Factor algorithm. Is is usefull for identifying density-based local outliers.
 
-```{r LOF outliers}
+```{r LOF outliers, message= FALSE}
+X.multivariantOutliers <- X.missForest
+outlier.scores <- lofactor(X.multivariantOutliers, k=5)
+# pick top 5 outliers
+outliers <- order(outlier.scores, decreasing=T)[1:5]
+# who are outliers
+nameOutliers<- list()
+for (i in 1:nrow(X.multivariantOutliers))
+{
+  if (i %in% outliers) nameOutliers <- rbind(nameOutliers, row.names(X.multivariantOutliers)[i])
+}
 nameOutliers
 ```
-Here we picked the 5 values with highest LOF as potential outliers. 
+Here we picked the 5 top values with highest LOF as potential outliers. 
+
+Then we should compare the results obtained by Mahalanobis distance and the ones obtained by LOF algorithm. If a country is present in all of the methods then, is an outlier.
+
 
 
 
