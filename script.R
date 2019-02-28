@@ -10,6 +10,8 @@ library(missForest)
 #install.packages('chemometrics')
 library(chemometrics)
 
+#install.packages('mvoutlier')
+library(mvoutlier)
 
 
 X <- read.table('Russet_ineqdata.txt', header=T, sep='\t', row.names=1)
@@ -142,11 +144,14 @@ ggplot(data = X.multivariantOutliers ,mapping = aes(y = X.multivariantOutliers$C
 
 ggplot(data = X.multivariantOutliers ,mapping = aes(y = X.multivariantOutliers$Robust, x = temp$Index, label = rownames(X.multivariantOutliers) )) +
   geom_point(data= X.multivariantOutliers, aes(y = X.multivariantOutliers$Robust, x = temp$Index, colour="Data") , size=1) +
+  geom_label(data= X.multivariantOutliers, aes(y = X.multivariantOutliers$Robust, x = temp$Index, colour="Data") , size=1) +
   xlab("Index") + ylab("Robust") +
   geom_line(mapping = aes(y= 1000)) +
   geom_text(hjust=0, vjust=0) +
   ggtitle("Robust Distance")
 
+
+  
 
 
 ggplot(data = X.multivariantOutliers ,mapping = aes(y = X.multivariantOutliers$Robust, x = X.multivariantOutliers$Classical, label = rownames(X.multivariantOutliers))) +

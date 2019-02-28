@@ -3,9 +3,9 @@ title: "Imputing missing data and detecting outliers"
 author: "Marc Mendez & Joel Cantero Priego"
 date: "28/2/2019"
 output:
+  pdf_document: default
   html_document:
     df_print: paged
-  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -55,7 +55,7 @@ Before to start, we have to identify them. In this case, we have realized that o
 library(mice)
 ```
 
-```{r message=FALSE}
+```{r message=FALSE, results='hide'}
 # Identifying missing values with a plot.
 md.pattern(X)
 ```
@@ -139,18 +139,62 @@ We can observe that Miss Forest, KNN and Regression Imputation have similar valu
 
 To conclude, we will use one of these three methods if we have to impute some NA values in our datasets. We discard mean imputation because it does not count the other values of our instance, and it is a bad value.
 
-```{r comparation, message=FALSE}
+```{r comparation, message=FALSE, echo=FALSE}
 X.compare <- rbind(X.Mean[is.na(X)], X.RegressionImputation[is.na(X)], X.knn[is.na(X)], X.mice[is.na(X)], X.missForest[is.na(X)] )
 row.names(X.compare) <- c('Mean', 'RegressionImputation', 'KNN', 'Mice', 'MissForest')
 X.compare
 ```
+```{r echo=FALSE}
+#install.packages(ggplot2)
+library(ggplot2)
+temp <- X
+temp[,10] <- NA
+names(temp)[10] <- "Index"
+for (i in 1:nrow(temp))
+  {
+    temp[i,10] <- i
+  }
+#Plotting Rent data imputed to see the comparation
+ggplot(data = X.knn, mapping = aes(y = X.knn$Rent, x = temp$Index)) + 
+  geom_point(data=X, aes(y = X.knn$Rent, x = temp$Index, colour="Data") , size=1) +
+  geom_point(data=X.Mean, aes(y = X.Mean$Rent[2], x = temp$Index[2], colour="Mean"), size=3) +
+  geom_point(data=X.Mean, aes(y = X.Mean$Rent[30], x = temp$Index[30], colour="Mean"), size=3) +
+  geom_point(data=X.Mean, aes(y = X.Mean$Rent[35], x = temp$Index[35], colour="Mean"), size=3) +
+  geom_point(data=X.RegressionImputation, aes(y = X.RegressionImputation$Rent[2], x = temp$Index[2], colour="Regression"), size=3) +
+  geom_point(data=X.RegressionImputation, aes(y = X.RegressionImputation$Rent[30], x = temp$Index[30], colour="Regression"), size=3) +
+  geom_point(data=X.RegressionImputation, aes(y = X.RegressionImputation$Rent[35], x = temp$Index[35], colour="Regression"), size=3) +
+  geom_point(data=X.knn, aes(y = X.knn$Rent[2], x = temp$Index[2], colour="Knn"), size=3) +
+  geom_point(data=X.knn, aes(y = X.knn$Rent[30], x = temp$Index[30], colour="Knn"), size=3) +
+  geom_point(data=X.knn, aes(y = X.knn$Rent[35], x = temp$Index[35], colour="Knn"), size=3) +
+  geom_point(data=X.missForest, aes(y = X.missForest$Rent[2], x = temp$Index[2], colour="MissForest"), size=3) +
+  geom_point(data=X.missForest, aes(y = X.missForest$Rent[30], x = temp$Index[30], colour="MissForest"), size=3) +
+  geom_point(data=X.missForest, aes(y = X.missForest$Rent[35], x = temp$Index[35], colour="MissForest"), size=3) +
+  geom_point(data=X.mice, aes(y = X.mice$Rent[2], x = temp$Index[2], colour="Mice"), size=3) +
+  geom_point(data=X.mice, aes(y = X.mice$Rent[30], x = temp$Index[30], colour="Mice"), size=3) +
+  geom_point(data=X.mice , aes(y = X.mice$Rent[35], x = temp$Index[35], colour="Mice"), size=3) +
+  xlab("Index") + ylab("Rent") +
+  ggtitle("Imputation of the Rent Values")
+
+#Plotting ecks data imputed to see the comparation
+ggplot(data = X.knn, mapping = aes(y = X.knn$ecks, x = temp$Index)) + 
+  geom_point(data=X, aes(y = X.knn$ecks, x = temp$Index, colour="Data") , size=1) +
+  geom_point(data=X.Mean, aes(y = X.Mean$ecks[31], x = temp$Index[31], colour="Mean"), size=3) +
+  geom_point(data=X.RegressionImputation, aes(y = X.RegressionImputation$ecks[31], x = temp$Index[31], colour="Regression"), size=3) +
+  geom_point(data=X.knn, aes(y = X.knn$ecks[31], x = temp$Index[31], colour="Knn"), size=3) +
+  geom_point(data=X.missForest, aes(y = X.missForest$ecks[31], x = temp$Index[31], colour="MissForest"), size=3) +
+  geom_point(data=X.mice, aes(y = X.mice$ecks[31], x = temp$Index[31], colour="Mice"), size=3) +
+  xlab("Index") + ylab("ecks") +
+  ggtitle("Imputation of the ecks Values")
+```
+
+
 
 ###Dealing with univariate outliers
-On this part we are asked to take one of the previous datasets and use them to detect and correct outliers. We will use the miss forest dataset. First step is to detect univariate outliers, this can be done with boxplots.
 
+On this part we are asked to take one of the previous datasets and use them to detect and correct(if necessary) outliers. We will use the miss forest dataset. First step is to detect univariate outliers, this can be done with boxplots.Then we should consider if they are rare observations or errors when collecting the data. 
 
+For the first case we should only consider them and try to understand where they come from. For the errors, we should delete them as the value we see is not a real value and imput with some of the previous methods. For example miss Forest.
 
-By analyzing the boxplots, we can see that some of the values are univariate outliers. This can be due to an anomaly lecture or an error when takin the data. In our case we can try to solve this by making them as an NA value and using an imput method to insert a more accurate value. We can do this more than once until we get all outliers corrected.
 
 ```{r, message=FALSE, eval =FALSE}
 X.outliers <- X.missForest
@@ -159,25 +203,20 @@ X.outliers <- missForest(X.outliers)$ximp
 boxplot(X.outliers$Instab, horizontal = TRUE, col = 'red')
 ```
 
-As we can see in this example, we detect univariate outliers in the boxplot. To solve it we transform them to NA and after assign a value. Once this is done we need to check if there are still outliers. 
+This is an example of how we are correcting errors, first we detect univariate outliers in the boxplot. To solve it, we transform them to NA and after assign a value. Once this is done we need to check if there are still outliers. 
+Maybe after this steps we still have some outliers, because the 1st Q. and the 3rd Q. have changed so this can make new outliers appear. We would have to reapeat all the process to check if they are rare values or errors.
 
 ###Dealing with multivariate outliers
-The next step once we have detected and corrected the univariate outliers, it is time to work on the multivariate. Data is multivariate and detecting univariate outliers does not imply multivariate detection. 
+
+Once you are sure your data has no errors and everything is correct, it is time to work on the multivariate analysis. Data is multivariate and detecting univariate outliers does not imply multivariate detection. So a good procedure is to calculate the Mahalanobis distance to see for each country the distance between a point and a distribution.
 
 For doing this we will use the moutliers function from the chemometrics package. With this function we obtain three values: the classical Mahalanobis distance, the robust Mahalanobis distance and the cutoff from which every value is an outlier(only for the Classical distance).
 
-```{r plot Robust distance, message = FALSE}
+```{r plot Robust distance, message = FALSE, echo= FALSE}
 #install.packages('chemometrics')
 library(chemometrics) 
-#install.packages('ggplot2')
-library(ggplot2) 
-temp <- X
-temp[,10] <- NA
-names(temp)[10] <- "Index"
-for (i in 1:nrow(temp))
-  {
-    temp[i,10] <- i
-}
+
+
 
 X.multivariantOutliers <- X.missForest
 temp2 <- Moutlier(X.multivariantOutliers, quantile = 0.995, plot = FALSE)
@@ -191,14 +230,20 @@ ggplot(data = X.multivariantOutliers ,mapping = aes(y = X.multivariantOutliers$R
   geom_text(hjust=0, vjust=0) +
   ggtitle("Robust Distance")
 ```
-The problem with Classical Mahalanobis distance can be influenced by univariate outliers. To avoid this we will use the Robus Mahalanobis distance which shows more clearly who are the outliers by estimating the centrallity and the covariance matrix.
-As we can see, the Robust shows clearly that Cuba is a multivariate outlier and we can also consider Sud-Vietnam and Bolicie as well. The other ones are not so clear, so we will consider only this three as potential outliers.
 
-Another option is to plot Classical distance vs Robust distance. By doing this we will have a more accurate solution as the outliers found by both methods give you stronger base to say they are outliers. This example applies for Cuba, is a clear outlier in Classical and also clear in Robust so we can say with high confidence it is an outlier.
+The problem with Classical Mahalanobis distance can be influenced by univariate outliers. To avoid this we will use the Robus Mahalanobis distance which shows more clearly who are the outliers by estimating the centrallity and the covariance matrix. The problem with this distance could be on where to set the cutoff. So for doing this the plot is very usefull. 
 
-Another way to detect multivariate outliers is to use the Local Outlier Factor algorithm. Is is usefull for identifying density-based local outliers.
+As we see on the example above, we can see as a clear outlier Cuba but the others are not so clear so we will set the cutoff arround 1000. The main reason is because almost all values have very low distance, and some of them are at most 500 so the three top outliers are far away from the following values. This means, the outlier with lower value is arround 1000 and the non-outlier data with higher value are on 500 which is 1/2 of the value of the outlier
 
-```{r LOF outliers, message= FALSE}
+With that said, the Robust shows clearly that Cuba is a multivariate outlier and we can also consider Sud-Vietnam and Bolicie as well. The other ones are not so clear, so we will consider only this three as potential outliers.
+
+Another option, is to plot Classical distance vs Robust distance. By doing this we will have a more accurate solution as the outliers found by both methods give you stronger base to say they are outliers. This example applies for Cuba, is a clear outlier in Classical and also clear in Robust so we can say with high confidence it is an outlier.
+
+Another way to detect multivariate outliers is to use the Local Outlier Factor algorithm. Is is usefull for identifying density-based local outliers. It is based on measuring the local deviation of a given data point with respect to its neighbours.
+
+```{r LOF outliers, message= FALSE, echo =FALSE}
+#install.packages('DMwR')
+library(DMwR)
 X.multivariantOutliers <- X.missForest
 outlier.scores <- lofactor(X.multivariantOutliers, k=5)
 # pick top 5 outliers
@@ -213,7 +258,7 @@ nameOutliers
 ```
 Here we picked the 5 top values with highest LOF as potential outliers. 
 
-Then we should compare the results obtained by Mahalanobis distance and the ones obtained by LOF algorithm. If a country is present in all of the methods then, is an outlier.
+Then we should compare the results obtained by Mahalanobis distance and the ones obtained by LOF algorithm. If a country is present in all of the methods then, is an outlier. So in our case, Cuba, Bolivie and Sud-Vietnam are present in both methods so that is a strong reason to say they are outliers. For the other two, we would have to study them(Canada and Estats-Units) as well as the outliers obtained by the Mahalanobis Robust distance.
 
 
 
